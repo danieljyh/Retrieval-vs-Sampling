@@ -27,9 +27,6 @@ class Args():
     retrieve_size: int = field(
         default=64
     )
-    n_local: int = field(
-        default=15000
-    )
 
 
     dataset_dir: str = field(

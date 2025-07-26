@@ -35,10 +35,11 @@ def load_model_and_processor(args):
         init_prompt_ids = processor.tokenizer(init_prompt, return_tensors="pt")["input_ids"]
         n_init = init_prompt_ids.shape[1] - 1 # Delete eos token after "user"
         n_frame_tokens = 196
+        n_local = 15000
 
         inf_llm_config = {
             'n_init': n_init,
-            'n_local': args.n_local,
+            'n_local': n_local,
             'fattn': True,
             'block_size': n_frame_tokens,
             'topk': args.retrieve_size,
@@ -56,7 +57,7 @@ def load_model_and_processor(args):
             processor=processor,
             n_frame_tokens=n_frame_tokens,
             init_prompt_ids=None,
-            n_local=args.n_local,
+            n_local=n_local,
             topk=args.retrieve_size,
             chunk_size=1,
         )

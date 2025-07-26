@@ -8,14 +8,7 @@ def sampling_generate(
     video,
     generation_config,
 ):
-    result = {
-        "pred": pred,
-        "answer_letter": sample["answer_letter"],
-        "answer": sample["answer"],
-        "question": sample["question"],
-        "choices": sample["choices"], # if the task is multiple choice
-        "video_id": data["video_id"],
-    }
+    return 0
 
 
 def rekv_generate(
@@ -26,32 +19,59 @@ def rekv_generate(
     generation_config,
 ):
     """
-    data 
-    video
-    generation_config 
+    Inputs:
+        data: Dict
+            {
+                "video_id": "BV1s94y1G7RD",
+                "video_path": "data/cgbench/videos/BV1s94y1G7RD.mp4",
+                "duration": 1980,
+                "conversations": [
+                    {
+                        "question": "In the video, a woman wearing glasses and a brown top folded the lower right corner of the book. What vegetables were on the book?",
+                        "choices": [
+                            "pumpkins",
+                            "beans",
+                            "corn",
+                            "carrots",
+                            "squash",
+                            "peas",
+                            "potatoes"
+                        ],
+                        "answer": "corn",
+                        "answer_letter": "A", # if the task is multiple choice
+                        "prompt": 
+                        "temporal_windows": [
+                            [
+                                5,
+                                7
+                            ]
+                        ]
+                    },
+                    ...,
+                ]
+            }
+        
+        video: np.array (Frame, H, W, Channel)
+
+        generation_config
+            {
+                "max_new_tokens": Int,
+                "eos_token_ids": List[token_id]     
+            }
     
 
-    output
+    Outputs:
+        List[Dict]
+        {
+            "pred": pred,
+            "answer_letter": sample["answer_letter"], # if the task is multiple choice
+            "answer": sample["answer"],
+            "question": sample["question"],
+            "choices": sample["choices"], # if the task is multiple choice
+            "video_id": data["video_id"],
+        }
     """
 
-
-    # input text: {
-    #   'question': 'Where did I put the dog fur?', 
-    #   'formatted_question': 'Question: Where did I put the dog fur?\nOptions:\n(A) on the sofa\n(B) on the floor\n(C) on the table\n(D) in the trash\nOnly give the best option.', 
-    #   'prompt': '\nQuestion: Where did I put the dog fur?\nOptions:\n(A) on the sofa\n(B) on the floor\n(C) on the table\n(D) in the trash\nOnly give the best option.<|im_end|><|im_start|>assistant\nBest option: ('
-    #}
-
-    # Output format: List[Dict]
-    # [
-    #     {
-    #         "video_id": ,
-    #         "question": ,
-    #         "choices": , # if the task is multiple choice
-    #         "answer": ,
-    #         "pred": ,
-    #     },
-    #     ...
-    # ]
 
     # 1. Prefill Phase
     model.clear_cache()
@@ -87,7 +107,7 @@ def rekv_generate(
 
         # 3. Decoding Phase
         output_ids = []
-        eos_token_ids = generation_config["eos_token_id"]
+        eos_token_ids = generation_config["eos_token_ids"]
         max_new_tokens = generation_config["max_new_tokens"] 
         for i in range(max_new_tokens):
             if i == 0:  # prefill

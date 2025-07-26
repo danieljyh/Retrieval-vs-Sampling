@@ -40,7 +40,7 @@ def main():
         eos_token_id = [eos_token_id]
     if args.newline_as_eos:
         eos_token_id.append(processor.tokenizer.encode("\n", add_special_tokens=False)[-1])
-    generation_config = {"eos_token_id": eos_token_id}
+    generation_config = {"eos_token_ids": eos_token_id}
 
 
     # 2. Model Generate
