@@ -27,19 +27,16 @@ def rekv_generate(
                 "duration": 1980,
                 "conversations": [
                     {
-                        "question": "In the video, a woman wearing glasses and a brown top folded the lower right corner of the book. What vegetables were on the book?",
+                        "question": "Where did I put the dog fur?",
                         "choices": [
-                            "pumpkins",
-                            "beans",
-                            "corn",
-                            "carrots",
-                            "squash",
-                            "peas",
-                            "potatoes"
+                            "on the sofa",
+                            "on the floor",
+                            "on the table",
+                            "in the trash
                         ],
-                        "answer": "corn",
+                        "answer": "on the sofa",
                         "answer_letter": "A", # if the task is multiple choice
-                        "prompt": 
+                        "prompt": "<|im_start|>system \nYou are a helpful assistant.<|im_end|><|im_start|>user <video>\nQuestion: Where did I put the dog fur?\nOptions:\n(A) on the sofa\n(B) on the floor\n(C) on the table\n(D) in the trash\nOnly give the best option.<|im_end|><|im_start|>assistant\nBest option: (" 
                         "temporal_windows": [
                             [
                                 5,
@@ -53,7 +50,7 @@ def rekv_generate(
         
         video: np.array (Frame, H, W, Channel)
 
-        generation_config
+        generation_config: Dict
             {
                 "max_new_tokens": Int,
                 "eos_token_ids": List[token_id]     
