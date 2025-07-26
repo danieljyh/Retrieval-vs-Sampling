@@ -1,0 +1,17 @@
+# Model: llava_ov_0.5b llava_ov_7b llava_ov_72b video_llava_7b longva_7b
+model="llava_ov_0.5b"
+method="rekv"
+
+# Dataset: qaego4d egoschema cgbench mlvu activitynet_qa rvs_ego rvs_movie
+tasks=(qaego4d)
+
+fps=0.5
+retrieve_size=64
+
+python -m main.eval \
+    --model $model \
+    --method $method \
+    --tasks $tasks \
+    --sample_fps $fps \
+    --retrieve_size $retrieve_size \
+    --n_local 15000 \
