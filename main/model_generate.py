@@ -3,7 +3,7 @@ import torch
 
 def sampling_generate(
     model,
-    processor, 
+    processor,
     data,
     video,
     generation_config,
