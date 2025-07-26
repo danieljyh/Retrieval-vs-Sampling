@@ -1,8 +1,8 @@
 import torch
 from transformers import LlavaOnevisionProcessor
 
-from models.ReKV.model.llava_onevision_rekv import LlavaOneVision_ReKV
-from models.ReKV.model.patch import patch_hf
+from models.ReKV.llava_onevision_rekv import LlavaOneVision_ReKV
+from models.ReKV.patch import patch_hf
 
 
 MODEL_PATH = {
