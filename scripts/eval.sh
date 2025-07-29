@@ -9,11 +9,26 @@ method="rekv"
 tasks=(qaego4d)
 
 fps=0.5
-retrieve_size=64
+retrieve_sizes=(16 32 128)
 
-python -m main.eval \
-    --model $model \
-    --method $method \
-    --tasks $tasks \
-    --sample_fps $fps \
-    --retrieve_size $retrieve_size \
+for retrieve_size in ${retrieve_sizes[@]}; do
+    python -m main.eval \
+        --model $model \
+        --method $method \
+        --tasks $tasks \
+        --sample_fps $fps \
+        --retrieve_size $retrieve_size \
+        --postfix $retrieve_size
+done
+
+
+model="llava_ov_0.5b"
+for retrieve_size in ${retrieve_sizes[@]}; do
+    python -m main.eval \
+        --model $model \
+        --method $method \
+        --tasks $tasks \
+        --sample_fps $fps \
+        --retrieve_size $retrieve_size \
+        --postfix $retrieve_size
+done
