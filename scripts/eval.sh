@@ -1,7 +1,7 @@
 export TRITON_LIBCUDA_PATH="/tools/cuda/cuda12.1/targets/x86_64-linux/lib/stubs"
 
 # Model: llava_ov_0.5b llava_ov_7b llava_ov_72b video_llava_7b longva_7b
-model="llava_ov_0.5b"
+model="llava_ov_7b"
 method="rekv"
 # method="sampling"
 
@@ -19,5 +19,5 @@ for retrieve_size in ${retrieve_sizes[@]}; do
         --tasks $tasks \
         --sample_fps $fps \
         --retrieve_size $retrieve_size \
-        --postfix $retrieve_size
+        --postfix "fps"$fps"_r"$retrieve_size
 done
