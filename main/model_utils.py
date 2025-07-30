@@ -45,7 +45,8 @@ def load_model_and_processor(args):
         init_prompt_ids = processor.tokenizer(init_prompt, return_tensors="pt")["input_ids"]
         n_init = init_prompt_ids.shape[1] - 1 # Delete eos token after "user"
         n_frame_tokens = 196
-        n_local = 15000
+        # n_local = 15000
+        n_local = n_frame_tokens * 64
 
         inf_llm_config = {
             'n_init': n_init,
