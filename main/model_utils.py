@@ -1,5 +1,5 @@
 import torch
-from transformers import LlavaOnevisionProcessor
+from transformers import LlavaOnevisionProcessor, LlavaOnevisionForConditionalGeneration
 
 from models.ReKV.llava_onevision_rekv import LlavaOneVision_ReKV
 from models.ReKV.patch import patch_hf
@@ -14,7 +14,17 @@ MODEL_PATH = {
 def load_model_and_processor(args):
     model_path = MODEL_PATH[args.model]
 
-    if args.method == "rekv":
+    if args.method == "basemodel":
+        model = LlavaOnevisionForConditionalGeneration.from_pretrained(
+            model_path,
+            torch_dtype=torch.float16,
+            device_map="auto",
+            attn_implementation="flash_attention_2",
+        )
+        model.eval()
+        processor = LlavaOnevisionProcessor.from_pretrained(model_path)
+
+    elif args.method == "rekv":
         # Load Processor
         processor = LlavaOnevisionProcessor.from_pretrained(model_path)
         
