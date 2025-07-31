@@ -9,12 +9,12 @@ method="rekv"
 # method="sampling"
 
 # 2. Dataset: qaego4d egoschema cgbench mlvu activitynet_qa rvs_ego rvs_movie
-tasks=(qaego4d)
-# tasks=(mlvu)
+tasks=("qaego4d")
+# tasks=("mlvu")
 
 # 3. Variants
 fps=0.5
-retrieve_sizes=(16 32 64 8 4)
+retrieve_sizes=(128)
 
 # 4. Run
 # ReKV, Sampling
@@ -25,7 +25,7 @@ for retrieve_size in ${retrieve_sizes[@]}; do
         --tasks $tasks \
         --sample_fps $fps \
         --retrieve_size $retrieve_size \
-        --postfix $fps"fps_r"$retrieve_size"_noStreaming"
+        --postfix $fps"fps_r"$retrieve_size
 done
 
 
