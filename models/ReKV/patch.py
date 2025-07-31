@@ -8,19 +8,28 @@ def huggingface_forward(forward):
     def hf_forward(
         self,
         hidden_states: torch.Tensor,
-        attention_mask = None,
-        position_ids = None,
-        past_key_value = None,
+        attention_mask=None,
+        position_ids=None,
+        past_key_value=None,
         output_attentions: bool = False,
         use_cache: bool = False,
         **kwargs,
     ):
         assert not output_attentions
         ret = forward(
-            self, hidden_states, hidden_states,
-            position_ids, use_cache, past_key_value,
-            self.q_proj, self.k_proj, self.v_proj, self.o_proj, 
-            self.head_dim, self.num_heads, self.num_key_value_heads
+            self,
+            hidden_states,
+            hidden_states,
+            position_ids,
+            use_cache,
+            past_key_value,
+            self.q_proj,
+            self.k_proj,
+            self.v_proj,
+            self.o_proj,
+            self.head_dim,
+            self.num_heads,
+            self.num_key_value_heads,
         )
         if use_cache:
             o, pkv = ret
@@ -33,49 +42,64 @@ def huggingface_forward(forward):
     return hf_forward
 
 
-def patch_hf(
-    model,
-    attn_kwargs: dict = {},
-    base = None, 
-    distance_scale = None,
-    **kwargs
-):
+def patch_hf(model, attn_kwargs: dict = {}, base=None, distance_scale=None, **kwargs):
     attn_kwargs.update(kwargs)
     # This approach lacks scalability and will be refactored.
-    from transformers import LlamaForCausalLM, MistralForCausalLM, Qwen2ForCausalLM, Qwen2Model
-    from transformers.models.llama.modeling_llama import LlamaAttention, LlamaModel, BaseModelOutputWithPast
+    from transformers import (
+        LlamaForCausalLM,
+        MistralForCausalLM,
+        Qwen2ForCausalLM,
+        Qwen2Model,
+    )
+    from transformers.models.llama.modeling_llama import (
+        LlamaAttention,
+        LlamaModel,
+        BaseModelOutputWithPast,
+    )
 
     def model_forward(
         self,
         input_ids: torch.LongTensor = None,
-        attention_mask = None,
-        position_ids = None,
-        past_key_values = None,
-        inputs_embeds = None,
-        use_cache = None,
-        output_attentions = None,
-        output_hidden_states = None,
-        return_dict = None,
+        attention_mask=None,
+        position_ids=None,
+        past_key_values=None,
+        inputs_embeds=None,
+        use_cache=None,
+        output_attentions=None,
+        output_hidden_states=None,
+        return_dict=None,
         *args,
-        **kwargs
+        **kwargs,
     ):
-        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+        output_attentions = (
+            output_attentions
+            if output_attentions is not None
+            else self.config.output_attentions
+        )
         output_hidden_states = (
-            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+            output_hidden_states
+            if output_hidden_states is not None
+            else self.config.output_hidden_states
         )
         use_cache = use_cache if use_cache is not None else self.config.use_cache
 
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = (
+            return_dict if return_dict is not None else self.config.use_return_dict
+        )
 
         # retrieve input_ids and inputs_embeds
         if input_ids is not None and inputs_embeds is not None:
-            raise ValueError("You cannot specify both decoder_input_ids and decoder_inputs_embeds at the same time")
+            raise ValueError(
+                "You cannot specify both decoder_input_ids and decoder_inputs_embeds at the same time"
+            )
         elif input_ids is not None:
             batch_size, seq_length = input_ids.shape
         elif inputs_embeds is not None:
             batch_size, seq_length, _ = inputs_embeds.shape
         else:
-            raise ValueError("You have to specify either decoder_input_ids or decoder_inputs_embeds")
+            raise ValueError(
+                "You have to specify either decoder_input_ids or decoder_inputs_embeds"
+            )
 
         if inputs_embeds is None:
             inputs_embeds = self.embed_tokens(input_ids)
@@ -102,7 +126,9 @@ def patch_hf(
                 hidden_states,
                 attention_mask=attention_mask,
                 position_ids=self.position_bias,
-                past_key_value=past_key_values[i] if past_key_values is not None else None,
+                past_key_value=(
+                    past_key_values[i] if past_key_values is not None else None
+                ),
                 output_attentions=output_attentions,
                 use_cache=use_cache,
             )
@@ -123,7 +149,11 @@ def patch_hf(
             all_hidden_states += (hidden_states,)
 
         if not return_dict:
-            return tuple(v for v in [hidden_states, pkv, all_hidden_states, all_self_attns] if v is not None)
+            return tuple(
+                v
+                for v in [hidden_states, pkv, all_hidden_states, all_self_attns]
+                if v is not None
+            )
         return BaseModelOutputWithPast(
             last_hidden_state=hidden_states,
             past_key_values=pkv,
@@ -146,23 +176,41 @@ def patch_hf(
         Attention = model.model.layers[0].self_attn.__class__
         Model = model.model.__class__
     else:
-        raise ValueError(f"Only supports llama, mistral and qwen2 models, not {model.__class__.__name__}.")
+        raise ValueError(
+            f"Only supports llama, mistral and qwen2 models, not {model.__class__.__name__}."
+        )
 
-    hf_rope = model.model.layers[0].self_attn.rotary_emb 
+    hf_rope = model.model.layers[0].self_attn.rotary_emb
     if isinstance(hf_rope, Qwen2RotaryEmbedding):
-        base = hf_rope.base
+        # base = hf_rope.base
+        base = getattr(hf_rope, "base", hf_rope.rope_kwargs.get("base", 10000))
+
         distance_scale = 1.0
-        dim = hf_rope.dim
+        # dim = hf_rope.dim
+
+        partial_rotary_factor = (
+            hf_rope.config.partial_rotary_factor
+            if hasattr(hf_rope.config, "partial_rotary_factor")
+            else 1.0
+        )
+        dim = int(
+            (hf_rope.config.hidden_size // hf_rope.config.num_attention_heads)
+            * partial_rotary_factor
+        )
+        dim = getattr(hf_rope, "dim", hf_rope.rope_kwargs.get("dim", dim))
     else:
         base = hf_rope.config.rope_theta
         distance_scale = distance_scale if distance_scale is not None else 1.0
-        partial_rotary_factor = hf_rope.config.partial_rotary_factor if hasattr(hf_rope.config, "partial_rotary_factor") else 1.0
-        dim = int((hf_rope.config.hidden_size // hf_rope.config.num_attention_heads) * partial_rotary_factor)
-    rope = RotaryEmbeddingESM(
-        dim,
-        base,
-        distance_scale
-    )
+        partial_rotary_factor = (
+            hf_rope.config.partial_rotary_factor
+            if hasattr(hf_rope.config, "partial_rotary_factor")
+            else 1.0
+        )
+        dim = int(
+            (hf_rope.config.hidden_size // hf_rope.config.num_attention_heads)
+            * partial_rotary_factor
+        )
+    rope = RotaryEmbeddingESM(dim, base, distance_scale)
     model.model.position_bias = rope
 
     def set_forward(m):
