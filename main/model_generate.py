@@ -1,4 +1,7 @@
 import torch
+import numpy as np
+from decord import VideoReader, cpu
+
 
 
 def sampling_generate(
@@ -21,6 +24,16 @@ def basemodel_generate(
 ):
     results = []
     for sample in data['conversations']:
+        # >>> Ablation: ground truth frames >>>
+        # video_path = data['video_path']
+        # vr = VideoReader(video_path, ctx=cpu(0))
+        # fps = round(vr.get_avg_fps())
+        # frame_st, frame_ed = sample["temporal_windows"][0]
+        # frame_idx = np.arange(fps*frame_st, fps*frame_ed, 5)
+        # frame_idx = frame_idx[:128]
+        # video = vr.get_batch(frame_idx).asnumpy()
+        # <<< Ablation: ground truth frames <<<
+
         inputs = processor(
             text=sample["prompt"],
             videos=video,

@@ -104,6 +104,7 @@ def main():
                     num_frames = len(vr)
                     frame_idx = np.linspace(0, num_frames-1, num=args.retrieve_size, dtype=int)
                     video = vr.get_batch(frame_idx).asnumpy()
+                    # video = None
                 else:
                     video_path = data['video_path']
                     vr = VideoReader(video_path, ctx=cpu(0))
