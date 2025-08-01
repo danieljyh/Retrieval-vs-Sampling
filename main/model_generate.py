@@ -29,7 +29,7 @@ def basemodel_generate(
         # vr = VideoReader(video_path, ctx=cpu(0))
         # fps = round(vr.get_avg_fps())
         # frame_st, frame_ed = sample["temporal_windows"][0]
-        # frame_idx = np.arange(fps*frame_st, fps*frame_ed, 5)
+        # frame_idx = np.arange(fps*frame_st, fps*frame_ed, 15)
         # frame_idx = frame_idx[:128]
         # video = vr.get_batch(frame_idx).asnumpy()
         # <<< Ablation: ground truth frames <<<

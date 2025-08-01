@@ -14,7 +14,7 @@ tasks=("qaego4d")
 
 # 3. Variants
 fps=0.5
-retrieve_sizes=(1 4 8 16 32 64 128)
+retrieve_sizes=(200)
 
 # 4. Run
 # ReKV, Sampling
@@ -38,4 +38,4 @@ for retrieve_size in ${retrieve_sizes[@]}; do
         --retrieve_size $retrieve_size \
         --postfix $retrieve_size
 done
-        # --postfix "gt"
+        # --postfix "gt_15"
