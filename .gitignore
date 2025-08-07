@@ -2,6 +2,7 @@
 *.zip
 
 
+
 *__pycache__*
 debug/*
 .vscode
@@ -10,4 +11,7 @@ tmp/*
 scripts/eval_j*.sh
 debug*
 data/egoschema/egoschema/
-results
+
+*.parquet
+*.tar.gz
+

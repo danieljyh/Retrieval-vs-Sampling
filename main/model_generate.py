@@ -1,4 +1,6 @@
 import torch
+import numpy as np
+from decord import VideoReader, cpu
 
 
 def full_generate(
@@ -172,6 +174,88 @@ def sampling_generate(
     return results
 
 
+def basemodel_generate(
+    model,
+    processor,
+    data,
+    video,
+    generation_config,
+):
+    results = []
+    for sample in data["conversations"]:
+        # >>> Ablation: ground truth frames >>>
+        # video_path = data['video_path']
+        # vr = VideoReader(video_path, ctx=cpu(0))
+        # fps = round(vr.get_avg_fps())
+        # frame_st, frame_ed = sample["temporal_windows"][0]
+        # frame_idx = np.arange(fps*frame_st, fps*frame_ed, 15)
+        # frame_idx = frame_idx[:128]
+        # video = vr.get_batch(frame_idx).asnumpy()
+        # <<< Ablation: ground truth frames <<<
+
+        inputs = processor(
+            text=sample["prompt"],
+            videos=video,
+            return_tensors="pt",
+        ).to(model.device, model.dtype)
+
+        # Prefill
+        outputs = model(
+            **inputs,
+            use_cache=True,
+        )
+        logits = outputs.logits[0, -1, :]
+        _, token_id = torch.topk(logits, 1)
+        token_id = int(token_id[0])
+
+        pred_ids = [token_id]
+
+        # Decoding
+        eos_token_ids = generation_config["eos_token_ids"]
+        max_new_tokens = generation_config["max_new_tokens"]
+        for _ in range(max_new_tokens):
+            outputs = model(
+                input_ids=torch.tensor([[token_id]], device=model.device),
+                past_key_values=outputs.past_key_values,
+                use_cache=True,
+            )
+            logits = outputs.logits[0, -1, :]
+            _, token_id = torch.topk(logits, 1)
+            token_id = int(token_id[0])
+
+            pred_ids.append(token_id)
+
+            if token_id in eos_token_ids:
+                break
+
+        # Result
+        pred = processor.tokenizer.decode(
+            pred_ids,
+            skip_special_tokens=True,
+            spaces_between_special_tokens=False,
+            clean_up_tokenization_spaces=True,
+        )
+
+        results.append(
+            {
+                "pred": pred,
+                "answer": sample.pop("answer"),
+                **sample,
+                "video_id": data["video_id"],
+            }
+        )
+        # results.append({
+        #     "pred": pred,
+        #     "answer_letter": sample["answer_letter"],
+        #     "answer": sample["answer"],
+        #     "question": sample["question"],
+        #     "choices": sample["choices"], # if the task is multiple choice
+        #     "video_id": data["video_id"],
+        # })
+
+    return results
+
+
 def rekv_generate(
     model,
     processor,
@@ -312,12 +396,18 @@ def rekv_generate(
         results.append(
             {
                 "pred": pred,
-                "answer_letter": sample["answer_letter"],
-                "answer": sample["answer"],
-                "question": sample["question"],
-                "choices": sample["choices"],  # if the task is multiple choice
+                "answer": sample.pop("answer"),
+                **sample,
                 "video_id": data["video_id"],
             }
         )
+        # results.append({
+        #     "pred": pred,
+        #     "answer_letter": sample["answer_letter"],
+        #     "answer": sample["answer"],
+        #     "question": sample["question"],
+        #     "choices": sample["choices"], # if the task is multiple choice
+        #     "video_id": data["video_id"],
+        # })
 
     return results

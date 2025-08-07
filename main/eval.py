@@ -2,6 +2,8 @@ import os
 import json
 import torch
 import pathlib
+import numpy as np
+import time
 from decord import VideoReader, cpu
 from tqdm import tqdm
 from transformers import HfArgumentParser
@@ -15,7 +17,12 @@ from .dataset_utils import (
     scorer,
 )
 from .model_utils import load_model_and_processor
-from .model_generate import rekv_generate, sampling_generate, full_generate
+from .model_generate import (
+    rekv_generate,
+    sampling_generate,
+    full_generate,
+    basemodel_generate,
+)
 
 
 CHOICE_LETTER = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]
@@ -62,6 +69,10 @@ def main():
                     results.append(json.loads(line))
         else:
             print(f"Evaluating {task} ({i + 1} / {len(args.tasks)})...")
+            file_name_ = (
+                f"_{task}_{args.postfix}.jsonl" if args.postfix else f"_{task}.jsonl"
+            )
+            result_path_ = os.path.join(result_dir, file_name_)
 
             # Load dataset
             dataset_path = os.path.join(args.dataset_dir, task, "test.json")
@@ -86,7 +97,7 @@ def main():
                         formatted_question = f"Question: {sample['question']}\nOptions:\n{formatted_choices}\nOnly give the best option."
 
                     elif DATASET2CATEGORY[task] == "open_ended":
-                        formatted_question = sample["question"]
+                        formatted_question = f"Question: {sample['question']}\nKeep the answer short and concise."
 
                     conversation = [
                         {
@@ -108,38 +119,77 @@ def main():
                     )
                     if DATASET2CATEGORY[task] == "multiple_choice":
                         sample["prompt"] += "Best option: ("
+                    elif DATASET2CATEGORY[task] == "open_ended":
+                        sample["prompt"] += "Answer: "
 
                 # Load video
-                video_path = data["video_path"]
-                vr = VideoReader(video_path, ctx=cpu(0))
-                fps = round(vr.get_avg_fps())
-                frame_idx = [i for i in range(0, len(vr), int(fps / args.sample_fps))]
-                video = vr.get_batch(frame_idx).asnumpy()
+                if args.method == "basemodel":
+                    video_path = data["video_path"]
+                    vr = VideoReader(video_path, ctx=cpu(0))
+                    num_frames = len(vr)
+                    frame_idx = np.linspace(
+                        0, num_frames - 1, num=args.retrieve_size, dtype=int
+                    )
+                    video = vr.get_batch(frame_idx).asnumpy()
+                    # video = None
+                else:
+                    video_path = data["video_path"]
+                    vr = VideoReader(video_path, ctx=cpu(0))
+                    fps = round(vr.get_avg_fps())
+                    frame_idx = [
+                        i for i in range(0, len(vr), int(fps / args.sample_fps))
+                    ]
+                    video = vr.get_batch(frame_idx).asnumpy()
 
                 # Generate
                 max_new_tokens = DATASET2MAXNEWTOKENS[task]
                 generation_config["max_new_tokens"] = max_new_tokens
 
-                if args.method == "rekv":
-                    results.extend(
-                        rekv_generate(model, processor, data, video, generation_config)
-                    )
-                elif args.method == "sampling":
-                    results.extend(
-                        sampling_generate(
-                            model, processor, data, video, generation_config
-                        )
-                    )
-                elif args.method == "full":
-                    results.extend(
-                        full_generate(model, processor, data, video, generation_config)
-                    )
-                else:
-                    raise NotImplementedError()
+                generator_dict = {
+                    "basemodel": basemodel_generate,
+                    "rekv": rekv_generate,
+                    "sampling": sampling_generate,
+                    "full": full_generate,
+                }
+
+                assert args.method in generator_dict, f"Unknown method: {args.method}"
+
+                generator = generator_dict[args.method]
+                results.extend(
+                    generator(model, processor, data, video, generation_config)
+                )
+
+                # if args.method == "basemodel":
+                #     result = basemodel_generate(model, processor, data, video, generation_config)
+                #     results.extend(result)
+                # elif args.method == "rekv":
+                #     result = rekv_generate(model, processor, data, video, generation_config)
+                #     results.extend(result)
+                # elif args.method == "sampling":
+                #     result = sampling_generate(model, processor, data, video, generation_config)
+                #     results.extend(result)
+                # elif args.method == "full":
+                #     results.extend(
+                #         full_generate(model, processor, data, video, generation_config)
+                #     )
+                # else:
+                #     raise NotImplementedError()
+
+                # Save
+                with open(result_path_, "a", encoding="utf-8") as f:
+                    for conv in result:
+                        f.write(json.dumps(conv, ensure_ascii=False) + "\n")
+
+                exit()
 
         # 3. Evaluate & Save
-        score = scorer(task, results)
-        print(f"{task}: {score}")
+        if DATASET2CATEGORY[task] == "multiple_choice":
+            score = scorer(task, results)
+            print(f"{task}: {score}")
+        elif DATASET2CATEGORY[task] == "open_ended":
+            score = 0.0
+        else:
+            raise NotImplementedError()
 
         file_name = f"{task}_{args.postfix}.jsonl" if args.postfix else f"{task}.jsonl"
         result_path = os.path.join(result_dir, file_name)
@@ -147,6 +197,8 @@ def main():
             f.write(json.dumps(score, ensure_ascii=False) + "\n")
             for result in results:
                 f.write(json.dumps(result, ensure_ascii=False) + "\n")
+
+        os.remove(result_path_)
 
 
 if __name__ == "__main__":
