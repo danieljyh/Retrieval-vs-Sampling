@@ -4,8 +4,8 @@ export TRITON_LIBCUDA_PATH="/tools/cuda/cuda12.1/targets/x86_64-linux/lib/stubs"
 # model="llava_ov_0.5b"
 model="llava_ov_7b"
 
-method="basemodel"
-# method="rekv"
+# method="basemodel"
+method="rekv"
 # method="sampling"
 
 # 2. Dataset: qaego4d egoschema cgbench mlvu activitynet_qa rvs_ego rvs_movie
