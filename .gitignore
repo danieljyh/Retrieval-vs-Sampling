@@ -1,4 +1,17 @@
 *.mp4
 *.zip
+
+
+
+*__pycache__*
+debug/*
+.vscode
+tmp/*
+*.dot
+scripts/eval_j*.sh
+debug*
+data/egoschema/egoschema/
+
 *.parquet
 *.tar.gz
+
