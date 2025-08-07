@@ -96,6 +96,8 @@ def main():
                     sample["prompt"] = processor.apply_chat_template(conversation, add_generation_prompt=True)
                     if DATASET2CATEGORY[task] == "multiple_choice":
                         sample["prompt"] += "Best option: ("
+                    elif DATASET2CATEGORY[task] == "open_ended":
+                        sample["prompt"] += "Answer: "
 
                 # Load video
                 if args.method == "basemodel":
@@ -133,6 +135,8 @@ def main():
                 with open(result_path_, "a", encoding="utf-8") as f:
                     for conv in result:
                         f.write(json.dumps(conv, ensure_ascii=False) + "\n")
+
+                exit()
             
         # 3. Evaluate & Save
         if DATASET2CATEGORY[task] == "multiple_choice":

@@ -79,12 +79,18 @@ def basemodel_generate(
 
         results.append({
             "pred": pred,
-            "answer_letter": sample["answer_letter"],
-            "answer": sample["answer"],
-            "question": sample["question"],
-            "choices": sample["choices"], # if the task is multiple choice
+            "answer": sample.pop("answer"),
+            **sample,
             "video_id": data["video_id"],
         })
+        # results.append({
+        #     "pred": pred,
+        #     "answer_letter": sample["answer_letter"],
+        #     "answer": sample["answer"],
+        #     "question": sample["question"],
+        #     "choices": sample["choices"], # if the task is multiple choice
+        #     "video_id": data["video_id"],
+        # })
 
     return results
 
@@ -226,11 +232,17 @@ def rekv_generate(
 
         results.append({
             "pred": pred,
-            "answer_letter": sample["answer_letter"],
-            "answer": sample["answer"],
-            "question": sample["question"],
-            "choices": sample["choices"], # if the task is multiple choice
+            "answer": sample.pop("answer"),
+            **sample,
             "video_id": data["video_id"],
         })
+        # results.append({
+        #     "pred": pred,
+        #     "answer_letter": sample["answer_letter"],
+        #     "answer": sample["answer"],
+        #     "question": sample["question"],
+        #     "choices": sample["choices"], # if the task is multiple choice
+        #     "video_id": data["video_id"],
+        # })
         
     return results            
