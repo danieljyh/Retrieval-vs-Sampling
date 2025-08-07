@@ -14,7 +14,7 @@ tasks=("qaego4d")
 
 # 3. Variants
 fps=0.5
-retrieve_sizes=(200)
+retrieve_sizes=(20)
 
 # 4. Run
 # ReKV, Sampling
