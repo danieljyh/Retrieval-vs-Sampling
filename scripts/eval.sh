@@ -1,8 +1,8 @@
 export TRITON_LIBCUDA_PATH="/tools/cuda/cuda12.1/targets/x86_64-linux/lib/stubs"
 
 # 1. Model: llava_ov_0.5b llava_ov_7b llava_ov_72b video_llava_7b longva_7b
-model="llava_ov_0.5b"
-# model="llava_ov_7b"
+# model="llava_ov_0.5b"
+model="llava_ov_7b"
 
 # method="basemodel"
 method="rekv"
@@ -15,7 +15,7 @@ tasks=("videoeval_pro")
 
 # 3. Variants
 fps=0.5
-retrieve_sizes=(64)
+retrieve_sizes=(64 32)
 
 # 4. Run
 # ReKV, Sampling
