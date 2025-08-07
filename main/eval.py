@@ -155,9 +155,8 @@ def main():
                 assert args.method in generator_dict, f"Unknown method: {args.method}"
 
                 generator = generator_dict[args.method]
-                results.extend(
-                    generator(model, processor, data, video, generation_config)
-                )
+                result = generator(model, processor, data, video, generation_config)
+                results.extend(result)
 
                 # if args.method == "basemodel":
                 #     result = basemodel_generate(model, processor, data, video, generation_config)
