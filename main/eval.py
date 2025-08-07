@@ -76,7 +76,7 @@ def main():
                         formatted_question = f"Question: {sample['question']}\nOptions:\n{formatted_choices}\nOnly give the best option."
 
                     elif DATASET2CATEGORY[task] == "open_ended":
-                        formatted_question = f"{sample['question']}\nKeep the answer short and concise."
+                        formatted_question = f"Question: {sample['question']}\nKeep the answer short and concise."
 
                     conversation = [
                         {

@@ -39,7 +39,7 @@ DATASET2MAXNEWTOKENS = {
     "egoschema": 16,
     "mlvu": 16,
     "activitynet_qa": 1024,
-    "videoeval-pro": 32,
+    "videoeval_pro": 32,
 }
 
 
@@ -49,7 +49,7 @@ DATASET2METRIC = {
     "egoschema": qa_multi_choice,
     "mlvu": qa_multi_choice,
     "activitynet_qa": qa_open_ended,
-    "videoeval-pro": qa_open_ended,
+    "videoeval_pro": qa_open_ended,
 }
 
 
@@ -59,5 +59,5 @@ DATASET2CATEGORY = {
     "egoschema": "multiple_choice",
     "mlvu": "multiple_choice",
     "activitynet_qa": "open_ended",
-    "videoeval-pro": "open_ended",
+    "videoeval_pro": "open_ended",
 }
