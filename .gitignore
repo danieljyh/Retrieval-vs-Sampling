@@ -10,3 +10,4 @@ tmp/*
 scripts/eval_j*.sh
 debug*
 data/egoschema/egoschema/
+results
