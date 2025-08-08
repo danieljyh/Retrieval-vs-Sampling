@@ -158,21 +158,6 @@ def main():
                 result = generator(model, processor, data, video, generation_config)
                 results.extend(result)
 
-                # if args.method == "basemodel":
-                #     result = basemodel_generate(model, processor, data, video, generation_config)
-                #     results.extend(result)
-                # elif args.method == "rekv":
-                #     result = rekv_generate(model, processor, data, video, generation_config)
-                #     results.extend(result)
-                # elif args.method == "sampling":
-                #     result = sampling_generate(model, processor, data, video, generation_config)
-                #     results.extend(result)
-                # elif args.method == "full":
-                #     results.extend(
-                #         full_generate(model, processor, data, video, generation_config)
-                #     )
-                # else:
-                #     raise NotImplementedError()
 
                 # Save
                 with open(result_path_, "a", encoding="utf-8") as f:

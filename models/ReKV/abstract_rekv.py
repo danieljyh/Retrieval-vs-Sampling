@@ -6,9 +6,7 @@ class Abstract_ReKV:
     processor = None
     kv_cache = None
 
-    def __init__(
-        self, processor, n_frame_tokens, init_prompt_ids, n_local, topk, chunk_size
-    ):
+    def __init__(self, processor, n_frame_tokens, init_prompt_ids, n_local, topk, chunk_size):
         self.processor = processor
         self.n_frame_tokens = n_frame_tokens
         self.init_prompt_ids = init_prompt_ids
@@ -24,37 +22,20 @@ class Abstract_ReKV:
     @torch.inference_mode()
     def encode_init_prompt(self):
         if not isinstance(self.init_prompt_ids, torch.Tensor):
-            self.init_prompt_ids = torch.as_tensor(
-                [self.init_prompt_ids], device=self.device
-            )
-        output = self.language_model(
-            input_ids=self.init_prompt_ids, use_cache=True, return_dict=True
-        )
+            self.init_prompt_ids = torch.as_tensor([self.init_prompt_ids], device=self.device)
+        output = self.language_model(input_ids=self.init_prompt_ids, use_cache=True, return_dict=True)
         self.kv_cache = output.past_key_values
 
     def _get_video_features(self, pixel_values_videos):
         pass
 
     def _encode_video_chunk(self, video_chunk):
-        pixel_values_videos = self.processor.video_processor(
-            video_chunk, return_tensors="pt"
-        ).pixel_values_videos.to(
-            self.device, self.dtype
-        )  # (1, Nv, 3, H, W)
-        video_features = self._get_video_features(
-            pixel_values_videos
-        )  # (1, Nv*196, D) ex. (1, 12544, 896)
-        assert (
-            self.n_local >= video_features.shape[1]
-        ), f"n_local: {self.n_local}, video_features: {video_features.shape[1]}"
+        pixel_values_videos = self.processor.video_processor(video_chunk, return_tensors="pt").pixel_values_videos.to(self.device, self.dtype)  # (1, Nv, 3, H, W)
+        video_features = self._get_video_features(pixel_values_videos)  # (1, Nv*196, D) ex. (1, 12544, 896)
+        assert self.n_local >= video_features.shape[1], f'n_local: {self.n_local}, video_features: {video_features.shape[1]}'
         # print("vision token:", video_features.shape)
         # print("input kv cache:", self.kv_cache[0].size())
-        output = self.language_model(
-            inputs_embeds=video_features,
-            past_key_values=self.kv_cache,
-            use_cache=True,
-            return_dict=True,
-        )
+        output = self.language_model(inputs_embeds=video_features, past_key_values=self.kv_cache, use_cache=True, return_dict=True)
         self.kv_cache = output.past_key_values
         # print("output kv cache:", self.kv_cache[0].size())
         # print("="*50)
@@ -79,7 +60,7 @@ class Abstract_ReKV:
             end_idx = start_idx + remaining_frames
             remaining_video = video[start_idx:end_idx]
             self._encode_video_chunk(remaining_video)
-
+        
         # logger.debug(f'KV-Cache RAM usage: {self.calc_memory_usage() / (1024**3):.1f} GB')
 
     @torch.inference_mode()

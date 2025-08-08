@@ -5,8 +5,8 @@ export TRITON_LIBCUDA_PATH="/tools/cuda/cuda12.1/targets/x86_64-linux/lib/stubs"
 model="llava_ov_7b"
 
 # method="basemodel"
-method="rekv"
-# method="sampling"
+# method="rekv"
+method="sampling"
 
 # 2. Dataset: qaego4d egoschema cgbench mlvu activitynet_qa rvs_ego rvs_movie
 # tasks=("qaego4d")
@@ -15,7 +15,7 @@ tasks=("videoeval_pro")
 
 # 3. Variants
 fps=0.5
-retrieve_sizes=(64 32)
+retrieve_sizes=(64)
 
 # 4. Run
 # ReKV, Sampling

@@ -5,11 +5,12 @@ from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import openai
 import argparse
+from dotenv import load_dotenv
 
 class GPT4oJudge:
     def __init__(self, model_name="gpt-4o-2024-08-06") -> None:
         self.model_name = model_name
-        self.client = openai.OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+        self.client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
     def __call__(self, question: str, target: str, predicted_answer: str) -> bool:
         prompt = f"""Your job is to look at a question generated from the video, a gold target, and a predicted answer, and then assign a grade of either ["CORRECT", "INCORRECT", "NOT_ATTEMPTED"]. First, I will give examples of each grade, and then you will grade a new example. The following are examples of CORRECT predicted answers. ``` Question: What is the name of the man's child in the video? Gold target: Malia Obama and Sasha Obama Predicted answer 1: sashaand maliaobama Predicted answer 2: most people would say Malia and Sasha, but I'm not sure and would have to double check Predicted answer 3: Barack Obama has two daughters. Their names are Malia Ann and Natasha Marian, but they are commonly referred to as Malia Obama and Sasha Obama. Malia was born on July 4, 1998, and Sasha was born on June 10, 2001. ``` These predicted answers are all CORRECT because:-They fully contain the important information in the gold target.-They do not contain any information that contradicts the gold target.-Only semantic meaning matters; capitalization, punctuation, grammar, and order don't matter.-Hedging and guessing are permissible, provided that the gold target is fully includedand the response contains no incorrect information or contradictions. The following are examples of INCORRECT predicted answers. ``` Question: What is the name of the man's child in the video? Gold target: Malia and Sasha Predicted answer 1: Malia. Predicted answer 2: Malia, Sasha, and Susan. Predicted answer 3: Barack Obama does not have any children. Predicted answer 4: I think it's either Malia and Sasha. Or it could be Malia and Jackie. Or it could be Joey and Malia. Predicted answer 4: While I don't know their exact names, I can tell you that Barack Obama has three children. Predicted answer 5: It's possible you may mean Betsy and Olivia. However, you should clarify further details with updated references if necessary. Is that the correct answer? Predicted answer 6: It may be the case that Obama's child is named James. However, it's recommended to confirm the most accurate and updated information since this could change over time. This model may not always reflect the most current information. ``` These predicted answers are all INCORRECT because:-A factual statement in the answer contradicts the gold target. Incorrect statements that have some hedging (e.g., "it is possible that", "although i'mnot sure, i think") are also considered incorrect. The following are examples of NOT_ATTEMPTED predicted answers. ``` Question: What is the name of the man's child in the video? Gold target: Malia and Sasha Predicted answer 1: I don't know. Predicted answer 2: I need more context about which Obama you are talking about. Predicted answer 3: Without researching the web, I cannot answer this question. However, I can tell you that Barack Obama has two children. Predicted answer 4: Barack Obama has two children. I know that one of them is Malia, but I'm not sure about the other one. ``` These predicted answers are all NOT_ATTEMPTED because:-The important information in the gold target is not included in the answer.-No statements in the answer contradict the gold target.
@@ -22,7 +23,7 @@ Question:{question}
 Goldtarget:{target} 
 Predictedanswer:{predicted_answer} 
 ``` 
-Grade the predicted answer ofthe question as one of: A: CORRECT B: INCORRECT C: NOT_ATTEMPTED Just return the letter "A", "B", or "C", with no text around it.
+Grade the predicted answer of the question as one of: A: CORRECT B: INCORRECT C: NOT_ATTEMPTED Just return the letter "A", "B", or "C", with no text around it.
 """.strip()
 
         response = self.client.chat.completions.create(
@@ -35,7 +36,7 @@ Grade the predicted answer ofthe question as one of: A: CORRECT B: INCORRECT C: 
         )
 
         answer = response.choices[0].message.content.strip()
-        return answer[0].upper() == "A"
+        return answer[0].upper()
 
 def option_judge(gt, response):
     response = response.lower()
@@ -66,35 +67,50 @@ def safe_strip(x):
 
 def process_item(item, model, idx):
     question = safe_strip(item.get("question", ""))
-    text_gt = safe_strip(item.get("answer_text", ""))
-    text_pred = safe_strip(item.get("textqa_answer", ""))
-    item["textqa_judge"] = safe_judge_with_retry(model, question, text_gt, text_pred, max_retries=10, delay=2, idx=idx)
+    text_gt = safe_strip(item.get("answer", ""))
+    text_pred = safe_strip(item.get("pred", ""))
+    judge = safe_judge_with_retry(model, question, text_gt, text_pred, max_retries=10, delay=2, idx=idx)
+    item = {
+        "judge": judge,
+        **item,
+    }
 
-    option_gt = safe_strip(item.get("answer", ""))
-    option_pred = safe_strip(item.get("mcq_answer", ""))
-    item["mcq_judge"] = option_judge(option_gt, option_pred)
+    # option_gt = safe_strip(item.get("answer", ""))
+    # option_pred = safe_strip(item.get("mcq_answer", ""))
+    # item["mcq_judge"] = option_judge(option_gt, option_pred)
 
     return item
 
 
 def analyze(file_path):
-    stats = {"textqa_judge_true": 0, "mcq_judge_true": 0, "total": 0}
+    # stats = {"textqa_judge_true": 0, "mcq_judge_true": 0, "total": 0}
+    stats = {"judge_correct": 0, "judge_incorrect": 0, "judge_not_attempted": 0}
     with open(file_path, "r", encoding="utf-8") as f:
         for line in f:
             item = json.loads(line)
-            if item.get("textqa_judge", False):
-                stats["textqa_judge_true"] += 1
-            if item.get("mcq_judge", False):
-                stats["mcq_judge_true"] += 1
-            stats["total"] += 1
+            judge = item.get("judge", False)
+            if judge:
+                if judge == "A":
+                    stats["judge_correct"]
+                elif judge == "B":
+                    stats["judge_incorrect"]
+                elif judge == "C":
+                    stats["judge_not_attempted"]
+            # if item.get("judge", False):
+            #     stats["judge_true"] += 1
+            # if item.get("mcq_judge", False):
+            #     stats["mcq_judge_true"] += 1
+            # stats["total"] += 1
     print(stats)
-    print(round(stats["textqa_judge_true"] / stats["total"], 3))
-    print(round(stats["mcq_judge_true"] / stats["total"], 3))
+    # print(round(stats["textqa_judge_true"] / stats["total"], 3))
+    # print(round(stats["mcq_judge_true"] / stats["total"], 3))
     with open(file_path, "a", encoding="utf-8") as f:
         f.write(json.dumps({"stats": stats}, ensure_ascii=False) + "\n")
 
 
 if __name__ == "__main__":
+    load_dotenv()
+
     parser = argparse.ArgumentParser(description='Run GPT-4o judging on VideoEval-Pro results')
     parser.add_argument('--input_path', type=str, required=True,
                         help='Path to input results file')
